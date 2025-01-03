@@ -21,6 +21,11 @@ contract Ballot{
 
     uint startTime;
 
+    modifier  checkStageValid(Stage requiredStage, string memory ctx){
+        require(requiredStage == stage, string(abi.encodePacked("Not in proper stage to execute function : ", ctx)));
+        _;
+    }
+
     // Construct a Ballot with n proposals
     constructor(uint8 _numProposals) {
         chairPerson = msg.sender;
@@ -38,7 +43,7 @@ contract Ballot{
     }
 
     // Must be register by chairPerson
-    function register(address toVoter) public {
+    function register(address toVoter) public checkStageValid(Stage.Reg, "register") {
         // Check we are in Registration stage
         require(stage == Stage.Reg, "Cannot register during the current stage");
 
@@ -52,8 +57,7 @@ contract Ballot{
         }
     }
 
-    function vote(uint8 toProposal) public {
-        require(stage == Stage.Vote, "Cannot vote during the current stage");
+    function vote(uint8 toProposal) public checkStageValid(Stage.Vote, "vote") {
         // storage keyword : Data stored persistently on the Eth. blockchain
         // stored in contract's storage
         // Expensive to read/write because it involves operations on the blockchain
@@ -64,8 +68,7 @@ contract Ballot{
         proposals[toProposal].voteCount += sender.weight;
     }
 
-    function winningProposal() public view returns (uint _winningProposal) {
-        require(stage == Stage.Done, "Cannot see the result before the vote has ended");
+    function winningProposal() public  checkStageValid(Stage.Done, "winningProposal") view returns (uint _winningProposal) {
         uint256 winningVoteCount = 0;
         for (uint8 prop = 0; prop < proposals.length; ++prop) {
             if( proposals[prop].voteCount > winningVoteCount) {
